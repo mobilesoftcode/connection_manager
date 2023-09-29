@@ -66,6 +66,21 @@ void main() {
     expect(response.message, "Message");
   });
 
+  test("Test success response content", () {
+    var response = PaginatedAPIResponse.success(
+        List.generate(50, (index) => null),
+        page: 1,
+        pageSize: 20,
+        response: APIResponse(
+            rawValue: null,
+            originalResponse: null,
+            statusCode: 200,
+            hasError: false,
+            message: "API response message"));
+
+    expect(response.data?.length, 50);
+  });
+
   test("Test copyWith", () {
     final res = PaginatedAPIResponse(
         total: 10,

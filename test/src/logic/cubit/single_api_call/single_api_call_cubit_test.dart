@@ -10,7 +10,8 @@ void main() {
     'emits [ApiCallLoadingState] and [ApiCallLoadedState] when startApiCall is called with success.',
     build: () => SingleApiCallCubit(
         apiCall:
-            ConnectionManagerStub().doApiRequest(endpoint: "mocks/test.json")),
+            ConnectionManagerStub()
+            .doApiRequest(endpoint: "mocks/test_map.json")),
     act: (cubit) => cubit.startApiCall(),
     expect: () => [ApiCallLoadingState(), isA<ApiCallLoadedState>()],
   );
@@ -19,7 +20,7 @@ void main() {
     'emits [ApiCallLoadingState] and [ApiCallErrorState] when startApiCall is called with error.',
     build: () => SingleApiCallCubit(
         apiCall: ConnectionManagerStub(responseStatusCode: 500)
-            .doApiRequest(endpoint: "mocks/test.json")),
+            .doApiRequest(endpoint: "mocks/test_map.json")),
     act: (cubit) => cubit.startApiCall(),
     expect: () => [ApiCallLoadingState(), isA<ApiCallErrorState>()],
   );
@@ -28,10 +29,11 @@ void main() {
     'verify `response` is correct after startApiCall is called with success.',
     build: () => SingleApiCallCubit(
         apiCall:
-            ConnectionManagerStub().doApiRequest(endpoint: "mocks/test.json")),
+            ConnectionManagerStub()
+            .doApiRequest(endpoint: "mocks/test_map.json")),
     act: (cubit) => cubit.startApiCall(),
     verify: (cubit) async {
-      var testJson = await rootBundle.loadString("mocks/test.json");
+      var testJson = await rootBundle.loadString("mocks/test_map.json");
 
       expect(cubit.response?.originalResponse?.body, testJson);
     },
