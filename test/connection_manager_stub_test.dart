@@ -37,9 +37,9 @@ void main() {
 
   test("Mock response for api call", () async {
     final connManager = ConnectionManagerStub(awaitResponse: false);
-    final endpoint =
-        await connManager.mockResponse(responseJsonPath: "mocks/test.json");
-    final res = await connManager.doApiRequest(endpoint: endpoint);
+    final res = await connManager
+        .mockResponseStatus()
+        .doApiRequest(endpoint: "mocks/test.json");
 
     var testJson = await rootBundle.loadString("mocks/test.json");
 

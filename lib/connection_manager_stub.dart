@@ -34,11 +34,18 @@ class ConnectionManagerStub<E extends Decodable>
     _responseStatusCode = responseStatusCode ?? 200;
   }
 
+  @Deprecated("Use `mockResponseStatus` instead")
   Future<String> mockResponse(
       {required String responseJsonPath, int statusCode = 200}) async {
     _responseStatusCode = statusCode;
     return await Future.value(responseJsonPath);
   }
+
+  ConnectionManagerStub mockResponseStatus({int statusCode = 200}) {
+    _responseStatusCode = statusCode;
+    return this;
+  }
+
 
   @override
   Future<APIResponse<T, E>> doApiRequest<T extends Decodable>({
