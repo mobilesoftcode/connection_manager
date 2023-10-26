@@ -7,14 +7,19 @@ part 'single_api_call_state.dart';
 
 class SingleApiCallCubit<T extends Decodable, E extends Decodable>
     extends Cubit<SingleApiCallState> {
-  final APIRequest<T, E> apiCall;
-  SingleApiCallCubit({required this.apiCall}) : super(ApiCallInitialState());
+  APIRequest<T, E> apiCall;
+  SingleApiCallCubit({required this.apiCall}) : super(ApiCallInitialState()) {
+    startApiCall();
+  }
 
   APIResponse<T, E>? response;
 
-  void startApiCall() async {
+  void startApiCall({APIRequest<T, E>? newApiCall}) async {
+    if (newApiCall != null) {
+      apiCall = newApiCall;
+    }
     emit(ApiCallLoadingState());
-    var res = await apiCall;
+    var res = await apiCall();
     response = res;
     if (res.hasError) {
       emit(ApiCallErrorState(errorMessage: res.message));

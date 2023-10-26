@@ -77,7 +77,6 @@ class ApiCallBuilder<T extends Decodable, E extends Decodable>
       child: BlocBuilder<SingleApiCallCubit<T, E>, SingleApiCallState>(
         builder: (context, state) {
           if (state is ApiCallInitialState) {
-            BlocProvider.of<SingleApiCallCubit<T, E>>(context).startApiCall();
             if (loaderBuilder != null) {
               return loaderBuilder!(context);
             }
