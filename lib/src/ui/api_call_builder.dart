@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../connection_manager.dart';
-import '../logic/cubit/single_api_call/single_api_call_cubit.dart';
 import '../ui/error_box.dart';
 import 'loader.dart';
 
@@ -22,6 +21,9 @@ class ApiCallBuilder<T extends Decodable, E extends Decodable>
   /// The api call to perform with the [ConnectionManager]. It is the same apicall
   /// with [doApiRequest] that is normally performmed by the [ConnectionManager]
   final APIRequest<T, E> apiCall;
+
+  /// Optionally, you can specify a [Widget] to not be involved in api calls rebuild
+  final Widget Function(Widget child)? child;
 
   /// The builder for a widget when the API call is successfull.
   /// The `response` argument is the class decoded by the [ConnectionManager].
@@ -66,6 +68,7 @@ class ApiCallBuilder<T extends Decodable, E extends Decodable>
     Key? key,
     required this.apiCall,
     required this.builder,
+    this.child,
     this.loaderBuilder,
     this.errorBuilder,
   }) : super(key: key);
@@ -74,32 +77,36 @@ class ApiCallBuilder<T extends Decodable, E extends Decodable>
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => SingleApiCallCubit<T, E>(apiCall: apiCall),
-      child: BlocBuilder<SingleApiCallCubit<T, E>, SingleApiCallState>(
-        builder: (context, state) {
-          if (state is ApiCallInitialState) {
-            if (loaderBuilder != null) {
-              return loaderBuilder!(context);
+      child: Builder(builder: (context) {
+        final blocBuilder =
+            BlocBuilder<SingleApiCallCubit<T, E>, SingleApiCallState>(
+          builder: (context, state) {
+            if (state is ApiCallInitialState) {
+              if (loaderBuilder != null) {
+                return loaderBuilder!(context);
+              }
+              return const LoaderWidget();
+            } else if (state is ApiCallLoadingState) {
+              if (loaderBuilder != null) {
+                return loaderBuilder!(context);
+              }
+              return const LoaderWidget();
+            } else if (state is ApiCallErrorState) {
+              if (errorBuilder != null) {
+                return errorBuilder!(context, state.errorMessage);
+              }
+              return ErrorBox(
+                errorMessage: state.errorMessage,
+              );
+            } else if (state is ApiCallLoadedState<T, E>) {
+              return builder(context, state.response.decodedBody,
+                  state.response.decodedBodyAsList);
             }
-            return const LoaderWidget();
-          } else if (state is ApiCallLoadingState) {
-            if (loaderBuilder != null) {
-              return loaderBuilder!(context);
-            }
-            return const LoaderWidget();
-          } else if (state is ApiCallErrorState) {
-            if (errorBuilder != null) {
-              return errorBuilder!(context, state.errorMessage);
-            }
-            return ErrorBox(
-              errorMessage: state.errorMessage,
-            );
-          } else if (state is ApiCallLoadedState<T, E>) {
-            return builder(context, state.response.decodedBody,
-                state.response.decodedBodyAsList);
-          }
-          return const ErrorBox();
-        },
-      ),
+            return const ErrorBox();
+          },
+        );
+        return child?.call(blocBuilder) ?? blocBuilder;
+      }),
     );
   }
 }
