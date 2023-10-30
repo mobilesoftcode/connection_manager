@@ -1,3 +1,8 @@
+## 1.2.0
+* **BREAKING** - Changed `ApiRequest` typedef to be a `Function` instead of a `Future` (impacts `ApiCallBuilder` widget)
+* Added method to trigger API call again for `SingleApiCallCubit`
+* Added _child_ parameter to `ApiCallBuilder` widget
+
 ## 1.1.9
 Added `client` parameter to `ConnectionManager` constructor to eventually override the default http client for API calls.
 
