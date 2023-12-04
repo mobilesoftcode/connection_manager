@@ -1,0 +1,31 @@
+name: Check and test the source code
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+jobs:
+  test_min:
+    name: Check the source code on 3.3.0
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: subosito/flutter-action@v2.12.0
+        with:
+          flutter-version: '3.3.0'
+      - name: Install packages
+        run: flutter pub get
+      - name: Test
+        run: flutter test
+  test_stable:
+    name: Check the source code on stable
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: subosito/flutter-action@v2.12.0
+        with:
+          channel: 'stable'
+      - name: Install packages
+        run: flutter pub get
+      - name: Test
+        run: flutter test
