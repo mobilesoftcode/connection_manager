@@ -9,7 +9,7 @@ jobs:
     name: Check the source code on 3.10.0
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2.12.0
         with:
           flutter-version: '3.10.0'
@@ -21,7 +21,7 @@ jobs:
     name: Check the source code on stable
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2.12.0
         with:
           channel: 'stable'
