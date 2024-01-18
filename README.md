@@ -1,4 +1,4 @@
-This package provides a simple implementation of a Connection Manager to do API request to a Server. Furthermore, it provides an ApiCallBuilder widget to easily integrate API calls in the widget tree and a PaginatedApiCallBuilder widget to easily integrate paginated API calls in the widget tree.
+This package provides a simple implementation of a Connection Manager to do API request to a Server (REST or GraphQL). Furthermore, it provides an ApiCallBuilder widget to easily integrate API calls in the widget tree and a PaginatedApiCallBuilder widget to easily integrate paginated API calls in the widget tree.
 
 ## Features
 
@@ -303,7 +303,38 @@ To enable automatic pagination on scrolling, pass a controller to the ScrollView
  If you do not specify arguments, by default the next page will be fetched. You can however specify a page, or that the pagination should go back/forward from actual page leaving calculations to the package. If you do not provide `newPage` than the next page is taken by default if `goToPreviousPage` is not _true_.
 
  ### Test
- TODO: Add ReadMe
+For test purposes or to simulate mocked responses, you can use `ConnectionManagerStub`. It is equivalent to the `ConnectionManager` (both extend `BaseConnectionManager`), with some little differences explained below.
+```dart
+final _connectionManager = ConnectionManagerStub<CustomError>(
+    decodeErrorFromMap: CustomError.fromMapError,
+    onTokenExpired: () async {
+      return await refreshToken(); // refreshToken() is not a method of this package
+    },
+    onResponseReceived: (Response response) {
+      print(response.body);
+    },
+    returnCatchedErrorMessage: true,
+    awaitResponse: true, // Optionally, simulate waiting 2 seconds for receiving response from BE
+    responseStatusCode: 500, /// Optionally, override all the http response status code for the API requests with a custom status code. If _null_ does not override status codes.
+  );
+```
+
+When creating an API request, you should pass a json file from the project assets to be used as response from an API call instead of the usual endpoint. The other parameters will be used as for a real API request.
+```dart
+var postApiResponse = await context.read<NetworkProvider>().connectionManager.doApiRequest(
+    requestType: ApiRequestType.get,
+    bodyType: ApiBodyType.json, // Optional, the type of the body for the request (json, formdata...)
+    endpoint: "mocks/test.json",
+)
+```
+
+Furthermore, when using `ConnectionManagerStub` you can specify a different status code expected for the next http response by calling the `mockResponseStatus` method. Note that response status code is reset to 200 after the following API call.
+```dart
+final res = await context.read<NetworkProvider>().connectionManager
+  .mockResponseStatus(statusCode: 404)
+  .doApiRequest(endpoint: "mocks/test.json");
+```
+
 
 ## Additional information
 

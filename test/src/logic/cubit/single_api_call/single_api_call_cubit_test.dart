@@ -5,11 +5,12 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
   test(
       "emits [ApiCallLoadingState] and [ApiCallLoadedState] at init and when startApiCall is called with success.",
       () async {
     var future =
-        ConnectionManagerStub().doApiRequest(endpoint: "mocks/test.json");
+        ConnectionManagerStub().doApiRequest(endpoint: "mocks/test_map.json");
 
     final cubit = SingleApiCallCubit(apiCall: () => future);
 
@@ -31,7 +32,7 @@ void main() {
       "emits [ApiCallLoadingState] and [ApiCallErrorState] at init and when startApiCall is called with error.",
       () async {
     var future = ConnectionManagerStub(responseStatusCode: 500)
-        .doApiRequest(endpoint: "mocks/test.json");
+        .doApiRequest(endpoint: "mocks/test_map.json");
 
     final cubit = SingleApiCallCubit(apiCall: () => future);
 
@@ -52,11 +53,12 @@ void main() {
   blocTest<SingleApiCallCubit, SingleApiCallState>(
     'verify `response` is correct after startApiCall is called with success.',
     build: () => SingleApiCallCubit(
-        apiCall: () =>
-            ConnectionManagerStub().doApiRequest(endpoint: "mocks/test.json")),
+        apiCall:
+            ConnectionManagerStub()
+            .doApiRequest(endpoint: "mocks/test_map.json")),
     act: (cubit) => cubit.startApiCall(),
     verify: (cubit) async {
-      var testJson = await rootBundle.loadString("mocks/test.json");
+      var testJson = await rootBundle.loadString("mocks/test_map.json");
 
       expect(cubit.response?.originalResponse?.body, testJson);
     },
