@@ -10,6 +10,7 @@ export 'base_connection_manager.dart';
 export 'connection_manager_stub.dart';
 export 'src/data/models/api_response.dart';
 export 'src/logic/cubit/paginated_api_call/paginated_api_call_cubit.dart';
+export 'src/logic/cubit/single_api_call/single_api_call_cubit.dart';
 
 import 'dart:convert';
 import 'base_connection_manager.dart';
@@ -31,7 +32,7 @@ typedef PaginatedAPIRequest<T extends Decodable, E extends Decodable>
         int page, Map<String, String>? query);
 
 typedef APIRequest<T extends Decodable, E extends Decodable>
-    = Future<APIResponse<T, E>>;
+    = Future<APIResponse<T, E>> Function();
 
 /// Class to manage API and network calls. It can be instantiated as a singleton
 /// to use a single instance of it all through the app.

@@ -198,11 +198,11 @@ PostApiResponse<User, GenericError>(
 ```
 
 ### ApiCallBuilder
-To easily integrate a widget that does an API call in your widget tree, you can use `ApiCallBuilder`. It's a widget that using bloc shows a loader while performing the provided API call and then returns the response in a builder that must return the widget to show on completion. The `ApiCallBuilder` must be together with the `ConnectionManager` as it accept as input the `doApiRequest` method as shown below.
+To easily integrate a widget that does an API call in your widget tree, you can use `ApiCallBuilder`. It's a widget that using bloc shows a loader while performing the provided API call and then returns the response in a builder that must return the widget to show on completion. The `ApiCallBuilder` must be used together with the `ConnectionManager` as it accept as input the `doApiRequest` method as shown below.
 
  ``` dart
  ApiCallBuilder<User, Error>(
-   apiCall: context.read<NetworkProvider>().doApiRequest(
+   apiCall: () => context.read<NetworkProvider>().doApiRequest(
      requestType: ApiRequestType.get,
      endpoint: "/test-endpoint",
    ),
@@ -214,6 +214,14 @@ To easily integrate a widget that does an API call in your widget tree, you can 
    emptyDataBuilder: (context) => Text("No data"),  /// Optional, a widget to manage the empty state can be provided. If not provided, the `builder` will be used
  );
  ```
+
+As soon as the widget is created, the api call is triggered. If you want to trigger the API call again, simply call:
+
+``` dart
+  context.read<SingleApiCallCubit<Decodable,Decodable>>().startApiCall();
+```
+
+Note that you can specify a `child` argument to always show some widgets while data is loading. Check the documentation for further details.
 
  ### PaginatedApiCallBuilder
 To manage transparently a paginated API call in the widget tree, you can use `PaginatedApiCallBuilder`. It shows a loading widget while performing the request and provides access to the response in the `builder` parameter, to show a proper widget on http call completion. Furthermore, it can manage pagination while scrolling.
