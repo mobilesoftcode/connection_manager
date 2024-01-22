@@ -1,11 +1,9 @@
-
-
+import 'package:dio/dio.dart' as dio;
 import 'base_connection_manager.dart';
 import 'src/utils/enums.dart';
 import 'src/data/models/decodable.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart';
-
 
 class ConnectionManagerStub<E extends Decodable>
     extends BaseConnectionManager<E> {
@@ -21,7 +19,7 @@ class ConnectionManagerStub<E extends Decodable>
     super.onResponseReceived,
     super.returnCatchedErrorMessage = true,
   }) : super(
-            baseUrl: "",
+          baseUrl: "",
           constantHeaders: {},
         ) {
     _responseStatusCode = responseStatusCode ?? 200;
@@ -40,18 +38,20 @@ class ConnectionManagerStub<E extends Decodable>
   }
 
   @override
-  Future<Response> getResponse(
-      {required ApiRequestType requestType,
-      required String url,
-      required Map<String, String> headersForApiRequest,
-      ApiBodyType bodyType = ApiBodyType.json,
-      Object? body,
-      required Duration timeout,
-      required bool persistCookies,
-      void Function(int p1)? uploadPercentage,
-      bool Function(int p1)? validateStatus,
-      void Function(int p1, int p2, int p3)? downloadProgress,
-      required Client httpClient}) async {
+  Future<Response> getResponse({
+    required ApiRequestType requestType,
+    required String url,
+    required Map<String, String> headersForApiRequest,
+    ApiBodyType bodyType = ApiBodyType.json,
+    Object? body,
+    required Duration timeout,
+    required bool persistCookies,
+    void Function(int p1)? uploadPercentage,
+    bool Function(int p1)? validateStatus,
+    void Function(int p1, int p2, int p3)? downloadProgress,
+    required Client httpClient,
+    dio.CancelToken? cancelToken,
+  }) async {
     var json = await rootBundle.loadString(url);
 
     if (awaitResponse) {
@@ -66,5 +66,4 @@ class ConnectionManagerStub<E extends Decodable>
     _responseStatusCode = 200;
     return response;
   }
-  
 }

@@ -178,6 +178,8 @@ var postApiResponse = await context.read<NetworkProvider>().connectionManager.do
     uploadPercentage: (percentage) => print(percentage), // it's used to retrieve the upload percentage status for _formData_ bodies. It's ignored for other _bodyTypes_.
     validateStatus: (status) => true, // it's used to evaluate response status code and manage it as success/error accordingly. Simply return _true_ or _false_ depending on the _status_. Note that status codes between 200 and 299 are always accepted as successfull.
     downloadProgress: (downloadedBytes, totalBytes, percentage) => print(percentage), // Optional, it's used to retrieve the download percentage status for responses from BE. It has three arguments: download bytes, total bytes count and percentage downloaded.
+    cancelToken: null, // Optional, it's eventually used to cancel the http request before awaiting termination. It does not work for _graphql_ requests.
+
 )
 ```
 
