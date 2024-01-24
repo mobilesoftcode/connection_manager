@@ -10,6 +10,7 @@ import 'src/utils/extensions.dart';
 import 'package:http/http.dart' as http;
 
 import 'src/utils/html_unescaper.dart';
+export 'package:dio/src/cancel_token.dart';
 
 abstract class BaseConnectionManager<E extends Decodable> {
   /// The base url for all the API calls
@@ -193,7 +194,8 @@ abstract class BaseConnectionManager<E extends Decodable> {
   /// - `persistCookies`: overrides the persistCookies property of [ConnectionManager]. If _true_ creates an instance of [CookieManager] to persist cookies for all the API calls.
   /// - `uploadPercentage`: optional, it's used to retrieve the upload percentage status for _formData_ bodies. It's ignored for other _bodyTypes_.
   /// - `validateStatus`: optional, it's used to evaluate response status code and manage it as success/error accordingly. Simply return _true_ or _false_ depending on the _status_. Note that status codes between 200 and 299 are always accepted as successfull.
-  /// - `downloadProgress`: optional: it's used to retrieve the download percentage status for responses from BE. It has three arguments: download bytes, total bytes count and percentage downloaded.
+  /// - `downloadProgress`: optional, it's used to retrieve the download percentage status for responses from BE. It has three arguments: download bytes, total bytes count and percentage downloaded.
+  /// - `cancelToken`: optional, it's eventually used to cancel the http request before awaiting termination. It does not work for _graphql_ requests.
   ///
   /// ## Usage
   /// ``` dart
@@ -235,6 +237,7 @@ abstract class BaseConnectionManager<E extends Decodable> {
     void Function(int)? uploadPercentage,
     bool Function(int)? validateStatus,
     void Function(int, int, int)? downloadProgress,
+    CancelToken? cancelToken,
   }) async {
     // Evaluate correct endpoint for API call
     String url;
@@ -270,6 +273,7 @@ abstract class BaseConnectionManager<E extends Decodable> {
         validateStatus: validateStatus,
         downloadProgress: downloadProgress,
         httpClient: httpClient,
+        cancelToken: cancelToken,
       );
 
       if (onResponseReceived != null) {
@@ -427,6 +431,7 @@ abstract class BaseConnectionManager<E extends Decodable> {
     bool Function(int)? validateStatus,
     void Function(int, int, int)? downloadProgress,
     required http.Client httpClient,
+    CancelToken? cancelToken,
   });
 
   /// The headers used for the API call

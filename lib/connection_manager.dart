@@ -121,10 +121,11 @@ class ConnectionManager<E extends Decodable> extends BaseConnectionManager<E> {
     bool Function(int)? validateStatus,
     void Function(int, int, int)? downloadProgress,
     required http.Client httpClient,
+    d.CancelToken? cancelToken,
   }) async {
     late http.Response response;
     if (bodyType == ApiBodyType.json) {
-      if (persistCookies || downloadProgress != null) {
+      if (persistCookies || downloadProgress != null || cancelToken != null) {
         response = await _getDioResponse(
           url: url,
           requestType: requestType,
@@ -134,6 +135,7 @@ class ConnectionManager<E extends Decodable> extends BaseConnectionManager<E> {
           timeout: timeout,
           validateStatus: validateStatus,
           downloadProgress: downloadProgress,
+          cancelToken: cancelToken,
         );
       } else {
         switch (requestType) {
@@ -184,6 +186,7 @@ class ConnectionManager<E extends Decodable> extends BaseConnectionManager<E> {
         timeout: timeout,
         uploadPercentage: uploadPercentage,
         validateStatus: validateStatus,
+        cancelToken: cancelToken,
       );
     }
     return response;
@@ -200,6 +203,7 @@ class ConnectionManager<E extends Decodable> extends BaseConnectionManager<E> {
     void Function(int)? uploadPercentage,
     bool Function(int)? validateStatus,
     void Function(int, int, int)? downloadProgress,
+    d.CancelToken? cancelToken,
   }) async {
     var dio = _dio ?? d.Dio();
     dio.options.baseUrl = url;
@@ -254,6 +258,7 @@ class ConnectionManager<E extends Decodable> extends BaseConnectionManager<E> {
           response = await dio.get(
             url,
             onReceiveProgress: onReceiveProgress,
+            cancelToken: cancelToken,
           );
           break;
         case ApiRequestType.post:
@@ -262,6 +267,7 @@ class ConnectionManager<E extends Decodable> extends BaseConnectionManager<E> {
             data: data,
             onSendProgress: onSendProgress,
             onReceiveProgress: onReceiveProgress,
+            cancelToken: cancelToken,
           );
           break;
         case ApiRequestType.put:
@@ -270,6 +276,7 @@ class ConnectionManager<E extends Decodable> extends BaseConnectionManager<E> {
             data: data,
             onSendProgress: onSendProgress,
             onReceiveProgress: onReceiveProgress,
+            cancelToken: cancelToken,
           );
           break;
         case ApiRequestType.patch:
@@ -278,12 +285,14 @@ class ConnectionManager<E extends Decodable> extends BaseConnectionManager<E> {
             data: data,
             onSendProgress: onSendProgress,
             onReceiveProgress: onReceiveProgress,
+            cancelToken: cancelToken,
           );
           break;
         case ApiRequestType.delete:
           response = await dio.delete(
             url,
             data: data,
+            cancelToken: cancelToken,
           );
           break;
       }

@@ -53,7 +53,7 @@ void main() {
   blocTest<SingleApiCallCubit, SingleApiCallState>(
     'verify `response` is correct after startApiCall is called with success.',
     build: () => SingleApiCallCubit(
-        apiCall:
+        apiCall: () =>
             ConnectionManagerStub()
             .doApiRequest(endpoint: "mocks/test_map.json")),
     act: (cubit) => cubit.startApiCall(),
