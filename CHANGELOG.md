@@ -1,3 +1,7 @@
+## 1.2.1
+* Added `cancelToken` parameter to `doApiRequest` method to cancel API calls
+* Updated dependencies
+
 ## 1.2.0
 * **BREAKING** - Changed `ApiRequest` typedef to be a `Function` instead of a `Future` (impacts `ApiCallBuilder` widget)
 * Added method to trigger API call again for `SingleApiCallCubit`
