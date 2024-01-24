@@ -1,6 +1,16 @@
+import 'dart:convert';
+
 import 'package:http/http.dart';
 
 import 'connection_manager.dart';
+import 'package:dio_cookie_manager/dio_cookie_manager.dart';
+import 'package:flutter/foundation.dart';
+import 'src/utils/extensions.dart';
+
+import 'package:http/http.dart' as http;
+
+import 'src/utils/html_unescaper.dart';
+export 'package:dio/src/cancel_token.dart';
 
 abstract class BaseConnectionManager<E extends Decodable> {
   /// The base url for all the API calls
@@ -42,7 +52,7 @@ abstract class BaseConnectionManager<E extends Decodable> {
   ///   return false;
   /// }
   /// ```
-  final bool Function(Response response)? onTokenExpiredRuleOverride;
+  final bool Function(http.Response response)? onTokenExpiredRuleOverride;
 
   /// A function fired when the http client gives a 401 response after an API call.
   /// It is used to refresh the auth token, if set, and after returning the new token
@@ -55,9 +65,9 @@ abstract class BaseConnectionManager<E extends Decodable> {
   final Future<String?> Function()? onTokenExpired;
 
   /// A function fired, if not _null_, when the `doApiRequest` method receives a response
-  /// from the BE. This can be useful to manage broadly a [Response] the same way
+  /// from the BE. This can be useful to manage broadly a [http.Response] the same way
   /// for every api call.
-  final void Function(Response response)? onResponseReceived;
+  final void Function(http.Response response)? onResponseReceived;
 
   /// Specify if the error message coming from the try-catch block in `doApiRequest`
   /// should be returned in the response (i.e. decoding errors). Default to _true_.
@@ -184,7 +194,8 @@ abstract class BaseConnectionManager<E extends Decodable> {
   /// - `persistCookies`: overrides the persistCookies property of [ConnectionManager]. If _true_ creates an instance of [CookieManager] to persist cookies for all the API calls.
   /// - `uploadPercentage`: optional, it's used to retrieve the upload percentage status for _formData_ bodies. It's ignored for other _bodyTypes_.
   /// - `validateStatus`: optional, it's used to evaluate response status code and manage it as success/error accordingly. Simply return _true_ or _false_ depending on the _status_. Note that status codes between 200 and 299 are always accepted as successfull.
-  /// - `downloadProgress`: optional: it's used to retrieve the download percentage status for responses from BE. It has three arguments: download bytes, total bytes count and percentage downloaded.
+  /// - `downloadProgress`: optional, it's used to retrieve the download percentage status for responses from BE. It has three arguments: download bytes, total bytes count and percentage downloaded.
+  /// - `cancelToken`: optional, it's eventually used to cancel the http request before awaiting termination. It does not work for _graphql_ requests.
   ///
   /// ## Usage
   /// ``` dart
@@ -207,7 +218,7 @@ abstract class BaseConnectionManager<E extends Decodable> {
   /// );
   /// ```
   Future<APIResponse<T, E>> doApiRequest<T extends Decodable>({
-    required ApiRequestType requestType,
+    ApiRequestType requestType = ApiRequestType.get,
     required String endpoint,
     ApiBodyType bodyType = ApiBodyType.json,
     Map<String, String>? headers,
@@ -226,6 +237,201 @@ abstract class BaseConnectionManager<E extends Decodable> {
     void Function(int)? uploadPercentage,
     bool Function(int)? validateStatus,
     void Function(int, int, int)? downloadProgress,
+    CancelToken? cancelToken,
+  }) async {
+    // Evaluate correct endpoint for API call
+    String url;
+    if (endpoint.contains("http")) {
+      url = endpoint;
+    } else {
+      url = baseUrl + endpoint;
+    }
+
+    // Evaluate correct headers
+    Map<String, String> headersForApiRequest = Map.of(this.headers);
+
+    if (headers != null) {
+      headersForApiRequest.addAll(headers);
+    }
+
+    if (query != null) {
+      url += query.convertToQueryString();
+    }
+
+    var httpClient = client ?? http.Client();
+
+    try {
+      http.Response response = await getResponse(
+        requestType: requestType,
+        url: url,
+        headersForApiRequest: headersForApiRequest,
+        bodyType: bodyType,
+        body: body,
+        timeout: timeout ?? this.timeout,
+        persistCookies: persistCookies ?? this.persistCookies,
+        uploadPercentage: uploadPercentage,
+        validateStatus: validateStatus,
+        downloadProgress: downloadProgress,
+        httpClient: httpClient,
+        cancelToken: cancelToken,
+      );
+
+      if (onResponseReceived != null) {
+        onResponseReceived!(response);
+      }
+
+      // Decode body
+      dynamic rawValue;
+      try {
+        if (response.contentLength != 0) {
+          if (useUtf8Decoding) {
+            rawValue = jsonDecode(utf8.decode(response.bodyBytes));
+          } else {
+            rawValue = jsonDecode(response.body);
+          }
+          if (unescapeHtmlCodes) {
+            verifyHtmlToUnescape(rawValue);
+          }
+        }
+      } catch (e) {
+        rawValue = response.body;
+      }
+
+      var statusCode = response.statusCode;
+      if (mapStatusCodeFromResponse != null) {
+        try {
+          statusCode =
+              mapStatusCodeFromResponse!(rawValue) ?? response.statusCode;
+        } catch (e) {
+          if (kDebugMode) {
+            print(e);
+          }
+        }
+      }
+
+      // Evaluate response
+      if ((statusCode >= 200 && statusCode < 300) ||
+          (validateStatus != null && validateStatus(statusCode))) {
+        T? decoded;
+        List<T>? decodedList;
+
+        if (response.contentLength != 0) {
+          if (decodeContentFromMap != null) {
+            var mapToDecode = rawValue;
+            if (filterMapResponseToDecodeContent != null) {
+              mapToDecode = filterMapResponseToDecodeContent(rawValue);
+            }
+            if (mapToDecode is Map<String, dynamic>) {
+              decoded = decodeContentFromMap(mapToDecode);
+              decodedList = [decoded];
+            } else if (mapToDecode is List) {
+              decodedList =
+                  List.from(mapToDecode.map((e) => decodeContentFromMap(e)));
+            }
+          }
+        }
+        return APIResponse<T, E>(
+            decodedBody: decoded,
+            decodedBodyAsList: decodedList,
+            rawValue: rawValue,
+            originalResponse: response,
+            statusCode: statusCode,
+            hasError: false);
+      } else if ((statusCode == 401 ||
+              (onTokenExpiredRuleOverride != null &&
+                  onTokenExpiredRuleOverride!(response))) &&
+          onTokenExpired != null &&
+          tryRefreshToken) {
+        var newToken = await onTokenExpired!();
+        if (newToken != null) {
+          setAuthHeader(newToken);
+        }
+        return await doApiRequest(
+          requestType: requestType,
+          endpoint: endpoint,
+          headers: headers,
+          bodyType: bodyType,
+          query: query,
+          body: body,
+          decodeContentFromMap: decodeContentFromMap,
+          filterMapResponseToDecodeContent: filterMapResponseToDecodeContent,
+          decodeErrorFromMapOverride: decodeErrorFromMapOverride,
+          unescapeHtmlCodes: unescapeHtmlCodes,
+          tryRefreshToken: false,
+          useUtf8Decoding: useUtf8Decoding,
+          timeout: timeout,
+          persistCookies: persistCookies,
+          uploadPercentage: uploadPercentage,
+          validateStatus: validateStatus,
+          downloadProgress: downloadProgress,
+        );
+      }
+
+      // http status error
+      E? decoded;
+
+      if (response.contentLength != 0) {
+        try {
+          if (decodeErrorFromMapOverride != null) {
+            decoded = decodeErrorFromMapOverride(statusCode, rawValue);
+          } else if (decodeErrorFromMap != null) {
+            decoded = decodeErrorFromMap!(statusCode, rawValue);
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            print(e);
+          }
+        }
+      }
+      return APIResponse<T, E>(
+          decodedErrorBody: decoded,
+          rawValue: rawValue,
+          originalResponse: response,
+          statusCode: statusCode,
+          hasError: true);
+    } catch (e) {
+      if (e.toString().toLowerCase() == "failed to parse header value" &&
+          onTokenExpired != null &&
+          tryRefreshToken) {
+        var newToken = await onTokenExpired!();
+        if (newToken != null) {
+          setAuthHeader(newToken);
+        }
+        return await doApiRequest(
+          requestType: requestType,
+          endpoint: endpoint,
+          headers: headers,
+          bodyType: bodyType,
+          query: query,
+          body: body,
+          decodeContentFromMap: decodeContentFromMap,
+          decodeErrorFromMapOverride: decodeErrorFromMapOverride,
+          unescapeHtmlCodes: unescapeHtmlCodes,
+          tryRefreshToken: false,
+        );
+      }
+      return APIResponse(
+          rawValue: null,
+          originalResponse: null,
+          statusCode: 500,
+          hasError: true,
+          message: returnCatchedErrorMessage ? e.toString() : null);
+    }
+  }
+
+  Future<http.Response> getResponse({
+    required ApiRequestType requestType,
+    required String url,
+    required Map<String, String> headersForApiRequest,
+    ApiBodyType bodyType = ApiBodyType.json,
+    Object? body,
+    required Duration timeout,
+    required bool persistCookies,
+    void Function(int)? uploadPercentage,
+    bool Function(int)? validateStatus,
+    void Function(int, int, int)? downloadProgress,
+    required http.Client httpClient,
+    CancelToken? cancelToken,
   });
 
   /// The headers used for the API call

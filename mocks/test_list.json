@@ -1,0 +1,6 @@
+[
+    {
+        "test": true,
+        "unescapeChars": "test&amp;"
+    }
+]

@@ -1,0 +1,23 @@
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+version: 2
+updates:
+  - package-ecosystem: "pub"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "09:00"
+      timezone: "Europe/Rome"
+    # open-pull-requests-limit: 5
+    reviewers:
+      - "mobilesoftcode/competence-center-flutter"
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "09:00"
+      timezone: "Europe/Rome"
+    # open-pull-requests-limit: 5
+    reviewers:
+      - "mobilesoftcode/competence-center-flutter"

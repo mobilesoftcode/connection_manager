@@ -16,11 +16,9 @@ import 'dart:convert';
 import 'base_connection_manager.dart';
 import 'src/data/models/file_data.dart';
 import 'src/data/models/paginated_api_response.dart';
-import 'src/utils/extensions.dart';
 import 'package:dio/dio.dart' as d;
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:cookie_jar/cookie_jar.dart';
-import 'package:flutter/foundation.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 
 import 'src/data/models/decodable.dart';
@@ -28,7 +26,6 @@ import 'package:http/http.dart' as http;
 
 import 'src/data/models/api_response.dart';
 import 'src/utils/enums.dart';
-import 'src/utils/html_unescaper.dart';
 
 typedef PaginatedAPIRequest<T extends Decodable, E extends Decodable>
     = Future<PaginatedAPIResponse<T, E>> Function(
@@ -93,30 +90,18 @@ class ConnectionManager<E extends Decodable> extends BaseConnectionManager<E> {
   ///
   /// For further informations on constructor parameters, see [docs]("https://git.mobilesoft.it/mobile-competence-center/competence-flutter/packages/connection_manager/-/blob/master/README.md").
   ConnectionManager({
-    required baseUrl,
-    required Map<String, String> constantHeaders,
-    E Function(int statusCode, Map<String, dynamic> data)? decodeErrorFromMap,
-    int? Function(Map<String, dynamic>? data)? mapStatusCodeFromResponse,
-    bool Function(http.Response response)? onTokenExpiredRuleOverride,
-    Future<String?> Function()? onTokenExpired,
-    void Function(http.Response response)? onResponseReceived,
-    bool returnCatchedErrorMessage = true,
-    Duration timeout = const Duration(minutes: 1),
-    bool persistCookies = false,
-    http.Client? client,
-  }) : super(
-          baseUrl: baseUrl,
-          constantHeaders: constantHeaders,
-          decodeErrorFromMap: decodeErrorFromMap,
-          mapStatusCodeFromResponse: mapStatusCodeFromResponse,
-          onTokenExpiredRuleOverride: onTokenExpiredRuleOverride,
-          onTokenExpired: onTokenExpired,
-          onResponseReceived: onResponseReceived,
-          returnCatchedErrorMessage: returnCatchedErrorMessage,
-          timeout: timeout,
-          persistCookies: persistCookies,
-          client: client,
-        ) {
+    required super.baseUrl,
+    required super.constantHeaders,
+    super.decodeErrorFromMap,
+    super.mapStatusCodeFromResponse,
+    super.onTokenExpiredRuleOverride,
+    super.onTokenExpired,
+    super.onResponseReceived,
+    super.returnCatchedErrorMessage = true,
+    super.timeout = const Duration(minutes: 1),
+    super.persistCookies = false,
+    super.client,
+  }) {
     if (persistCookies) {
       _dio = d.Dio();
       _dio?.interceptors.add(CookieManager(CookieJar()));
@@ -124,106 +109,23 @@ class ConnectionManager<E extends Decodable> extends BaseConnectionManager<E> {
   }
 
   @override
-  Future<APIResponse<T, E>> doApiRequest<T extends Decodable>({
+  Future<http.Response> getResponse({
     required ApiRequestType requestType,
-    required String endpoint,
-    Map<String, String>? headers,
+    required String url,
+    required Map<String, String> headersForApiRequest,
     ApiBodyType bodyType = ApiBodyType.json,
-    Map<String, String>? query,
     Object? body,
-    T Function(Map<String, dynamic> data)? decodeContentFromMap,
-    dynamic Function(Map<String, dynamic> data)?
-        filterMapResponseToDecodeContent,
-    E Function(int statusCode, Map<String, dynamic> data)?
-        decodeErrorFromMapOverride,
-    bool unescapeHtmlCodes = false,
-    bool tryRefreshToken = true,
-    bool useUtf8Decoding = false,
-    Duration? timeout,
-    bool? persistCookies,
+    required Duration timeout,
+    required bool persistCookies,
     void Function(int)? uploadPercentage,
     bool Function(int)? validateStatus,
     void Function(int, int, int)? downloadProgress,
+    required http.Client httpClient,
+    d.CancelToken? cancelToken,
   }) async {
-    // Evaluate correct endpoint for API call
-    String url;
-    if (endpoint.contains("http")) {
-      url = endpoint;
-    } else {
-      url = baseUrl + endpoint;
-    }
-
-    // Evaluate correct headers
-    Map<String, String> headersForApiRequest = Map.of(super.headers);
-
-    if (headers != null) {
-      headersForApiRequest.addAll(headers);
-    }
-
-    if (query != null) {
-      url += query.convertToQueryString();
-    }
-
-    var httpClient = client ?? http.Client();
-
-    try {
-      late http.Response response;
-
-      if (bodyType == ApiBodyType.json) {
-        if (persistCookies ??
-            super.persistCookies || downloadProgress != null) {
-          response = await _getDioResponse(
-            url: url,
-            requestType: requestType,
-            body: body,
-            bodyType: bodyType,
-            headers: headersForApiRequest,
-            timeout: timeout,
-            validateStatus: validateStatus,
-            downloadProgress: downloadProgress,
-          );
-        } else {
-          switch (requestType) {
-            case ApiRequestType.get:
-              response = await httpClient
-                  .get(Uri.parse(url), headers: headersForApiRequest)
-                  .timeout(timeout ?? super.timeout);
-              break;
-            case ApiRequestType.post:
-              response = await httpClient
-                  .post(Uri.parse(url),
-                      headers: headersForApiRequest, body: body)
-                  .timeout(timeout ?? super.timeout);
-              break;
-            case ApiRequestType.put:
-              response = await httpClient
-                  .put(Uri.parse(url),
-                      headers: headersForApiRequest, body: body)
-                  .timeout(timeout ?? super.timeout);
-              break;
-            case ApiRequestType.patch:
-              response = await httpClient
-                  .patch(Uri.parse(url),
-                      headers: headersForApiRequest, body: body)
-                  .timeout(timeout ?? super.timeout);
-              break;
-            case ApiRequestType.delete:
-              response = await httpClient
-                  .delete(Uri.parse(url), headers: headersForApiRequest)
-                  .timeout(timeout ?? super.timeout);
-              break;
-          }
-        }
-      } else if (bodyType == ApiBodyType.graphQL) {
-        response = await _getGraphQLResponse(
-          url: url,
-          requestType: requestType,
-          body: body,
-          bodyType: bodyType,
-          headers: headersForApiRequest,
-          timeout: timeout,
-        );
-      } else {
+    late http.Response response;
+    if (bodyType == ApiBodyType.json) {
+      if (persistCookies || downloadProgress != null || cancelToken != null) {
         response = await _getDioResponse(
           url: url,
           requestType: requestType,
@@ -231,152 +133,63 @@ class ConnectionManager<E extends Decodable> extends BaseConnectionManager<E> {
           bodyType: bodyType,
           headers: headersForApiRequest,
           timeout: timeout,
-          uploadPercentage: uploadPercentage,
-          validateStatus: validateStatus,
-        );
-      }
-
-      if (onResponseReceived != null) {
-        onResponseReceived!(response);
-      }
-
-      // Decode body
-      dynamic rawValue;
-      try {
-        if (response.contentLength != 0) {
-          if (useUtf8Decoding) {
-            rawValue = jsonDecode(utf8.decode(response.bodyBytes));
-          } else {
-            rawValue = jsonDecode(response.body);
-          }
-          if (unescapeHtmlCodes) {
-            verifyHtmlToUnescape(rawValue);
-          }
-        }
-      } catch (e) {
-        rawValue = response.body;
-      }
-
-      var statusCode = response.statusCode;
-      if (mapStatusCodeFromResponse != null) {
-        try {
-          statusCode =
-              mapStatusCodeFromResponse!(rawValue) ?? response.statusCode;
-        } catch (e) {
-          if (kDebugMode) {
-            print(e);
-          }
-        }
-      }
-
-      // Evaluate response
-      if ((statusCode >= 200 && statusCode < 300) ||
-          (validateStatus != null && validateStatus(statusCode))) {
-        T? decoded;
-        List<T>? decodedList;
-
-        if (response.contentLength != 0) {
-          if (decodeContentFromMap != null) {
-            var mapToDecode = rawValue;
-            if (filterMapResponseToDecodeContent != null) {
-              mapToDecode = filterMapResponseToDecodeContent(rawValue);
-            }
-            if (mapToDecode is Map<String, dynamic>) {
-              decoded = decodeContentFromMap(mapToDecode);
-              decodedList = [decoded];
-            } else if (mapToDecode is List) {
-              decodedList =
-                  List.from(mapToDecode.map((e) => decodeContentFromMap(e)));
-            }
-          }
-        }
-        return APIResponse<T, E>(
-            decodedBody: decoded,
-            decodedBodyAsList: decodedList,
-            rawValue: rawValue,
-            originalResponse: response,
-            statusCode: statusCode,
-            hasError: false);
-      } else if ((statusCode == 401 ||
-              (onTokenExpiredRuleOverride != null &&
-                  onTokenExpiredRuleOverride!(response))) &&
-          onTokenExpired != null &&
-          tryRefreshToken) {
-        var newToken = await onTokenExpired!();
-        if (newToken != null) {
-          setAuthHeader(newToken);
-        }
-        return await doApiRequest(
-          requestType: requestType,
-          endpoint: endpoint,
-          headers: headers,
-          bodyType: bodyType,
-          query: query,
-          body: body,
-          decodeContentFromMap: decodeContentFromMap,
-          filterMapResponseToDecodeContent: filterMapResponseToDecodeContent,
-          decodeErrorFromMapOverride: decodeErrorFromMapOverride,
-          unescapeHtmlCodes: unescapeHtmlCodes,
-          tryRefreshToken: false,
-          useUtf8Decoding: useUtf8Decoding,
-          timeout: timeout,
-          persistCookies: persistCookies,
-          uploadPercentage: uploadPercentage,
           validateStatus: validateStatus,
           downloadProgress: downloadProgress,
+          cancelToken: cancelToken,
         );
-      }
-
-      // http status error
-      E? decoded;
-
-      if (response.contentLength != 0) {
-        try {
-          if (decodeErrorFromMapOverride != null) {
-            decoded = decodeErrorFromMapOverride(statusCode, rawValue);
-          } else if (decodeErrorFromMap != null) {
-            decoded = decodeErrorFromMap!(statusCode, rawValue);
-          }
-        } catch (e) {
-          if (kDebugMode) {
-            print(e);
-          }
+      } else {
+        switch (requestType) {
+          case ApiRequestType.get:
+            response = await httpClient
+                .get(Uri.parse(url), headers: headersForApiRequest)
+                .timeout(timeout);
+            break;
+          case ApiRequestType.post:
+            response = await httpClient
+                .post(Uri.parse(url), headers: headersForApiRequest, body: body)
+                .timeout(timeout);
+            break;
+          case ApiRequestType.put:
+            response = await httpClient
+                .put(Uri.parse(url), headers: headersForApiRequest, body: body)
+                .timeout(timeout);
+            break;
+          case ApiRequestType.patch:
+            response = await httpClient
+                .patch(Uri.parse(url),
+                    headers: headersForApiRequest, body: body)
+                .timeout(timeout);
+            break;
+          case ApiRequestType.delete:
+            response = await httpClient
+                .delete(Uri.parse(url), headers: headersForApiRequest)
+                .timeout(timeout);
+            break;
         }
       }
-      return APIResponse<T, E>(
-          decodedErrorBody: decoded,
-          rawValue: rawValue,
-          originalResponse: response,
-          statusCode: statusCode,
-          hasError: true);
-    } catch (e) {
-      if (e.toString().toLowerCase() == "failed to parse header value" &&
-          onTokenExpired != null &&
-          tryRefreshToken) {
-        var newToken = await onTokenExpired!();
-        if (newToken != null) {
-          setAuthHeader(newToken);
-        }
-        return await doApiRequest(
-          requestType: requestType,
-          endpoint: endpoint,
-          headers: headers,
-          bodyType: bodyType,
-          query: query,
-          body: body,
-          decodeContentFromMap: decodeContentFromMap,
-          decodeErrorFromMapOverride: decodeErrorFromMapOverride,
-          unescapeHtmlCodes: unescapeHtmlCodes,
-          tryRefreshToken: false,
-        );
-      }
-      return APIResponse(
-          rawValue: null,
-          originalResponse: null,
-          statusCode: 500,
-          hasError: true,
-          message: returnCatchedErrorMessage ? e.toString() : null);
+    } else if (bodyType == ApiBodyType.graphQL) {
+      response = await _getGraphQLResponse(
+        url: url,
+        requestType: requestType,
+        body: body,
+        bodyType: bodyType,
+        headers: headersForApiRequest,
+        timeout: timeout,
+      );
+    } else {
+      response = await _getDioResponse(
+        url: url,
+        requestType: requestType,
+        body: body,
+        bodyType: bodyType,
+        headers: headersForApiRequest,
+        timeout: timeout,
+        uploadPercentage: uploadPercentage,
+        validateStatus: validateStatus,
+        cancelToken: cancelToken,
+      );
     }
+    return response;
   }
 
   /// Use DIO package to make a request with a FormData/xwwwformurlencoded body
@@ -386,15 +199,16 @@ class ConnectionManager<E extends Decodable> extends BaseConnectionManager<E> {
     required Map<String, String> headers,
     required ApiBodyType bodyType,
     required Object? body,
-    Duration? timeout,
+    required Duration timeout,
     void Function(int)? uploadPercentage,
     bool Function(int)? validateStatus,
     void Function(int, int, int)? downloadProgress,
+    d.CancelToken? cancelToken,
   }) async {
     var dio = _dio ?? d.Dio();
     dio.options.baseUrl = url;
     dio.options.headers = headers;
-    dio.options.receiveTimeout = timeout ?? super.timeout;
+    dio.options.receiveTimeout = timeout;
     if (validateStatus != null) {
       dio.options.validateStatus = (status) {
         if (status == null) {
@@ -444,6 +258,7 @@ class ConnectionManager<E extends Decodable> extends BaseConnectionManager<E> {
           response = await dio.get(
             url,
             onReceiveProgress: onReceiveProgress,
+            cancelToken: cancelToken,
           );
           break;
         case ApiRequestType.post:
@@ -452,6 +267,7 @@ class ConnectionManager<E extends Decodable> extends BaseConnectionManager<E> {
             data: data,
             onSendProgress: onSendProgress,
             onReceiveProgress: onReceiveProgress,
+            cancelToken: cancelToken,
           );
           break;
         case ApiRequestType.put:
@@ -460,6 +276,7 @@ class ConnectionManager<E extends Decodable> extends BaseConnectionManager<E> {
             data: data,
             onSendProgress: onSendProgress,
             onReceiveProgress: onReceiveProgress,
+            cancelToken: cancelToken,
           );
           break;
         case ApiRequestType.patch:
@@ -468,12 +285,14 @@ class ConnectionManager<E extends Decodable> extends BaseConnectionManager<E> {
             data: data,
             onSendProgress: onSendProgress,
             onReceiveProgress: onReceiveProgress,
+            cancelToken: cancelToken,
           );
           break;
         case ApiRequestType.delete:
           response = await dio.delete(
             url,
             data: data,
+            cancelToken: cancelToken,
           );
           break;
       }

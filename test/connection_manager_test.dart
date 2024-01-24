@@ -4,6 +4,7 @@ import 'package:connection_manager/connection_manager.dart';
 
 void main() {
   test('', () async {
+    
     var _ = ConnectionManager(
         baseUrl: "google.it",
         constantHeaders: {"Content-Type": "application/json"});

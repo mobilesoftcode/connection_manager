@@ -1,21 +1,26 @@
 import 'package:html_unescape/html_unescape.dart';
 
-verifyHtmlToUnescape(dynamic value) {
-  if (value is Map<String, dynamic>) {
+T verifyHtmlToUnescape<T>(T value) {
+  if (value is String) {
+    return HtmlUnescape().convert(value) as T;
+  } else if (value is Map<String, dynamic>) {
     value.forEach((key, element) {
       if (element is String) {
         value[key] = HtmlUnescape().convert(element);
       } else {
-        verifyHtmlToUnescape(element);
+        value[key] = verifyHtmlToUnescape(element);
       }
     });
+    return value;
   } else if (value is List) {
     for (var element in value) {
       if (element is String) {
         value[value.indexOf(element)] = HtmlUnescape().convert(element);
       } else {
-        verifyHtmlToUnescape(element);
+        value[value.indexOf(element)] = verifyHtmlToUnescape(element);
       }
     }
+    return value;
   }
+  return value;
 }
