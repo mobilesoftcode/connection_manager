@@ -5,7 +5,6 @@ import 'package:http/http.dart';
 import 'connection_manager.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:flutter/foundation.dart';
-import 'src/utils/extensions.dart';
 
 import 'package:http/http.dart' as http;
 
@@ -254,10 +253,6 @@ abstract class BaseConnectionManager<E extends Decodable> {
       headersForApiRequest.addAll(headers);
     }
 
-    if (query != null) {
-      url += query.convertToQueryString();
-    }
-
     var httpClient = client ?? http.Client();
 
     try {
@@ -267,6 +262,7 @@ abstract class BaseConnectionManager<E extends Decodable> {
         headersForApiRequest: headersForApiRequest,
         bodyType: bodyType,
         body: body,
+        query: query,
         timeout: timeout ?? this.timeout,
         persistCookies: persistCookies ?? this.persistCookies,
         uploadPercentage: uploadPercentage,
@@ -426,6 +422,7 @@ abstract class BaseConnectionManager<E extends Decodable> {
     ApiBodyType bodyType = ApiBodyType.json,
     Object? body,
     required Duration timeout,
+    Map<String, String>? query,
     required bool persistCookies,
     void Function(int)? uploadPercentage,
     bool Function(int)? validateStatus,

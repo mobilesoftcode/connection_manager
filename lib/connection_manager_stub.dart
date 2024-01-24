@@ -45,6 +45,7 @@ class ConnectionManagerStub<E extends Decodable>
     ApiBodyType bodyType = ApiBodyType.json,
     Object? body,
     required Duration timeout,
+    Map<String, String>? query,
     required bool persistCookies,
     void Function(int p1)? uploadPercentage,
     bool Function(int p1)? validateStatus,
