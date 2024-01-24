@@ -1,3 +1,6 @@
+## 1.2.1+1
+* Fix query string added to endpoint for `ConnectionManagerStub`
+
 ## 1.2.1
 * Added `cancelToken` parameter to `doApiRequest` method to cancel API calls
 * Updated dependencies
