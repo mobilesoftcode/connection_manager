@@ -13,6 +13,8 @@ export 'src/logic/cubit/paginated_api_call/paginated_api_call_cubit.dart';
 export 'src/logic/cubit/single_api_call/single_api_call_cubit.dart';
 
 import 'dart:convert';
+import 'package:connection_manager/src/utils/extensions.dart';
+
 import 'base_connection_manager.dart';
 import 'src/data/models/file_data.dart';
 import 'src/data/models/paginated_api_response.dart';
@@ -116,6 +118,7 @@ class ConnectionManager<E extends Decodable> extends BaseConnectionManager<E> {
     ApiBodyType bodyType = ApiBodyType.json,
     Object? body,
     required Duration timeout,
+    Map<String, String>? query,
     required bool persistCookies,
     void Function(int)? uploadPercentage,
     bool Function(int)? validateStatus,
@@ -124,6 +127,10 @@ class ConnectionManager<E extends Decodable> extends BaseConnectionManager<E> {
     d.CancelToken? cancelToken,
   }) async {
     late http.Response response;
+    if (query != null) {
+      url += query.convertToQueryString();
+    }
+    
     if (bodyType == ApiBodyType.json) {
       if (persistCookies || downloadProgress != null || cancelToken != null) {
         response = await _getDioResponse(
