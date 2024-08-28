@@ -53,17 +53,15 @@ class ConnectionManagerStub<E extends Decodable>
     required Client httpClient,
     dio.CancelToken? cancelToken,
   }) async {
-    var json = await rootBundle.loadString(url);
+    var data = await rootBundle.load(url);
 
     if (awaitResponse) {
       await Future.delayed(const Duration(seconds: 2));
     }
 
-    var response = Response(
-      json,
-      _responseStatusCode,
-      headers: headersForApiRequest,
-    );
+    var response = Response.bytes(data.buffer.asInt8List(), _responseStatusCode,
+        headers: headersForApiRequest);
+
     _responseStatusCode = 200;
     return response;
   }
