@@ -1,40 +1,56 @@
+## 1.2.2
+
+* Added body to `DELETE` API calls
+* Improved mocks to have files as responses instead of json
+* Updated dependencies
+
 ## 1.2.1+1
+
 * Fix query string added to endpoint for `ConnectionManagerStub`
 
 ## 1.2.1
+
 * Added `cancelToken` parameter to `doApiRequest` method to cancel API calls
 * Updated dependencies
 
 ## 1.2.0
+
 * **BREAKING** - Changed `ApiRequest` typedef to be a `Function` instead of a `Future` (impacts `ApiCallBuilder` widget)
 * Added method to trigger API call again for `SingleApiCallCubit`
 * Added _child_ parameter to `ApiCallBuilder` widget
 
 ## 1.1.9
+
 Added `client` parameter to `ConnectionManager` constructor to eventually override the default http client for API calls.
 
 ## 1.1.8
+
 Initial release on GitHub, increased dependencies. Requires Dart 3.
 
 ## 1.1.7
+
 Added `mapStatusCodeFromResponse` parameter to `ConnectionManager` constructor to eventually override the http status code of API calls with a value from the body response.
 
 ## 1.1.6
+
 Added `downloadProgress` parameter to `doApiRequest` method to be notified of bytes download progress during the API call.
 
 ## 1.1.5
+
 Added `onTokenExpiredRuleOverride` parameter to `ConnectionManager` constructor.
 
 ## 1.1.4
+
 Added `onResponseReceived` parameter to `ConnectionManager` constructor.
 
 ## 1.1.3
+
 Added `filterMapResponseToDecodeContent` parameter to `doApiRequest` method to prefilter the response body json when trying to decode content with `decodeContentFromMap`.
 
 ## 1.1.2
+
 * **BREAKING** - Added `reponseList` argument in builder attribute of `ApiCallBuilder`
 * Fixed error parsing for graphQL response.
-
 
 ## 1.1.1
 
@@ -48,6 +64,7 @@ Added the `PaginatedApiCallBuilder` to  easily make paginated API calls.
 ## 1.0.9
 
 Added a method to retrieve upload percentage for formData bodies.
+
 ## 1.0.8
 
 * Added cookie manager to preserve cookies among API requests done with the same ConnectionManager.
