@@ -130,7 +130,7 @@ class ConnectionManager<E extends Decodable> extends BaseConnectionManager<E> {
     if (query != null) {
       url += query.convertToQueryString();
     }
-    
+
     if (bodyType == ApiBodyType.json) {
       if (persistCookies || downloadProgress != null || cancelToken != null) {
         response = await _getDioResponse(
@@ -169,7 +169,8 @@ class ConnectionManager<E extends Decodable> extends BaseConnectionManager<E> {
             break;
           case ApiRequestType.delete:
             response = await httpClient
-                .delete(Uri.parse(url), headers: headersForApiRequest)
+                .delete(Uri.parse(url),
+                    headers: headersForApiRequest, body: body)
                 .timeout(timeout);
             break;
         }
