@@ -1,6 +1,6 @@
 name: connection_manager
 description: A simple connection manager to work with API and network calls
-version: 1.2.2
+version: 1.2.3
 homepage: "https://github.com/mobilesoftcode/connection_manager"
 issue_tracker: "https://github.com/mobilesoftcode/connection_manager/issues"
 
@@ -23,7 +23,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ">=2.0.2 <4.0.0"
+  flutter_lints: ">=2.0.2 <6.0.0"
   bloc_test: ^9.1.5
 
 flutter:
